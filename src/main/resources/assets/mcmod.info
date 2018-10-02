@@ -1,0 +1,16 @@
+[
+{
+  "modid": "spookythings",
+  "name": "Spooky Things",
+  "description": "Add a touch of Spooky to Minecraft!",
+  "version": "${version}",
+  "mcversion": "${mcversion}",
+  "url": "https://github.com/ProxyNeko/spooky-things",
+  "updateUrl": "",
+  "authorList": ["ProxyNeko"],
+  "credits": "ProxyNeko",
+  "logoFile": "",
+  "screenshots": [],
+  "dependencies": []
+}
+]

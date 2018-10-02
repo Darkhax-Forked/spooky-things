@@ -1,0 +1,102 @@
+buildscript {
+    repositories {
+        jcenter()
+        maven {
+            name = "forge"
+            url = "http://files.minecraftforge.net/maven"
+        }
+
+        maven {
+            name = "git changelog"
+            url = "https://plugins.gradle.org/m2/"
+        }
+    }
+    dependencies {
+        classpath "net.minecraftforge.gradle:${project.forge_gradle_version}"
+        classpath "gradle.plugin.se.bjurr.gitchangelog:git-changelog-gradle-plugin:1.55"
+    }
+}
+
+plugins {
+    id "com.matthewprenger.cursegradle" version "1.0.10"
+    id "org.sonarqube" version "2.6"
+}
+
+apply plugin: 'net.minecraftforge.gradle.forge'
+apply plugin: "se.bjurr.gitchangelog.git-changelog-gradle-plugin"
+
+
+sourceCompatibility = JavaVersion.VERSION_1_8
+targetCompatibility = JavaVersion.VERSION_1_8
+
+version = project.minecraft_version + '-' + project.mod_version
+group = project.group
+archivesBaseName = project.mod_id
+
+minecraft {
+    version = project.minecraft_version + '-' + project.forge_version
+    runDir = 'run'
+    mappings = project.mcp_mappings
+
+    replace '@version@', project.mod_version
+    replace '@mc_version@', project.minecraft_version
+    replace '@update_json@', project.update_json
+    replace '@fingerprint@', project.fingerprint
+
+    if (project.hasProperty('mc_username')) {
+        clientRunArgs += ['--username', project.mc_username]
+        if (project.hasProperty('mc_password')) {
+            clientRunArgs += ['--password', project.mc_password]
+        }
+    }
+
+    if (project.hasProperty('mc_uuid')) {
+        clientRunArgs += ['--uuid', project.mc_uuid]
+    }
+
+    serverRunArgs += 'nogui'
+    serverJvmArgs += '-Dfml.doNotBackup=true'
+    clientJvmArgs += '-Dfml.doNotBackup=true'
+    serverJvmArgs += '-Dfml.queryResult=confirm'
+    makeObfSourceJar = false
+}
+
+processResources {
+    inputs.property "version", project.version
+    inputs.property "mcversion", project.minecraft.version
+    from(sourceSets.main.resources.srcDirs) {
+        include 'mcmod.info'
+        expand 'version':project.version, 'mcversion':project.minecraft.version
+    }
+    from(sourceSets.main.resources.srcDirs) {
+        exclude 'mcmod.info'
+    }
+}
+
+task signJar(type: SignJar, dependsOn: reobfJar) {
+    onlyIf {
+        project.hasProperty('keyStore')
+    }
+    keyStore = project.keyStore
+    alias = project.keyStoreAlias
+    storePass = project.keyStorePass
+    keyPass = project.keyStoreKeyPass
+    inputFile = jar.archivePath
+    outputFile = jar.archivePath
+}
+build.dependsOn signJar
+
+curseforge {
+    apiKey = project.curse_api_key
+    project {
+        id = project.project_id
+        releaseType = project.release_type.toLowerCase()
+        changelog = project.changelog
+        addGameVersion project.minecraft_version
+    }
+}
+
+task gitChangelog(type: se.bjurr.gitchangelog.plugin.gradle.GitChangelogTask) {
+    file = new File("CHANGELOG.md");
+    templateContent = file('changelog.mustache').getText('UTF-8');
+}
